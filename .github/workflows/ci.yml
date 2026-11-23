@@ -1,0 +1,26 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  loc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Lint
+        run: shellcheck -S warning loc/loc.sh loc/tests/*.sh
+      - name: Test
+        run: |
+          set -euo pipefail
+          for suite in loc/tests/test_*.sh; do bash "$suite"; done
+      - name: Test with mawk as awk
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/mawk"
+          ln -s "$(command -v mawk)" "$RUNNER_TEMP/mawk/awk"
+          export PATH="$RUNNER_TEMP/mawk:$PATH"
+          awk -W version 2>&1 | sed -n 1p
+          for suite in loc/tests/test_*.sh; do bash "$suite"; done
